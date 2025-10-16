@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator de Senhas WiFi Huawei</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .drop-zone:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .drop-zone-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone-text {
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-hint {
+            font-size: 14px;
+            color: #888;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .network-card {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+
+        .network-card:hover {
+            transform: translateX(5px);
+        }
+
+        .network-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .network-band {
+            font-size: 12px;
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .password-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .password-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 60px;
+        }
+
+        .password-value {
+            flex: 1;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+        }
+
+        .error {
+            background: #fee;
+            border-left: 4px solid #f44;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #1565C0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔓 Extrator de Senhas WiFi Huawei</h1>
+            <p>Arraste o arquivo hw_ctree.xml ou clique para selecionar</p>
+        </div>
+
+        <div class="content">
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Arraste o arquivo XML aqui</div>
+                <div class="drop-zone-hint">ou clique para selecionar</div>
+            </div>
+
+            <input type="file" id="fileInput" accept=".xml,text/xml">
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Processando arquivo...</div>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="results" id="results"></div>
+
+            <div class="info-box">
+                <strong>ℹ️ Instruções:</strong><br>
+                1. Baixe o arquivo de configuração hw_ctree.xml do roteador<br>
+                2. Arraste o arquivo para a área acima ou clique para selecionar<br>
+                3. As senhas WiFi serão extraídas e descriptografadas automaticamente
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PASSWORD_HEX = "6fc6e3436a53b6310dc09a475494ac774e7afb21b9e58fc8e58b5660e48e2498";
+        const BLOCK_SIZE = 0x14;
+
+
+        // Helper functions
+        function toHexString(bytes) {
+            return Array.from(bytes, byte => 
+                byte.toString(16).padStart(2, '0')
+            ).join('');
+        }
+
+        function fromHexString(hexString) {
+            const bytes = new Uint8Array(hexString.length / 2);
+            for (let i = 0; i < hexString.length; i += 2) {
+                bytes[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
+            }
+            return bytes;
+        }
+
+        // Huawei specific decryption functions
+        function HW_AES_Trim(encryptedStr) {
+            if (!encryptedStr || encryptedStr.length < 3) return "";
+            if (encryptedStr[0] !== "$" || encryptedStr[1] !== "2" || encryptedStr[encryptedStr.length - 1] !== "$") {
+                return "";
+            }
+            return encryptedStr.substring(2, encryptedStr.length - 1);
+        }
+
+        function HW_AES_AscUnvisible(encryptedStr) {
+            const buf = new Uint8Array(encryptedStr.length);
+            for (let i = 0; i < encryptedStr.length; i++) {
+                const charCode = encryptedStr.charCodeAt(i);
+                buf[i] = charCode === 0x7E ? 0x1E : charCode - 0x21;
+            }
+            return buf;
+        }
+
+        function HW_AES_AesEnhSysToLong(buffer) {
+            let output = 0;
+            let v3 = 1;
+            for (let i = 0; i < 5; i++) {
+                output += v3 * buffer[i];
+                v3 *= 0x5D;
+            }
+            return output;
+        }
+
+        function HW_AES_PlainToBin(buffer) {
+            if (buffer.length % 5 !== 0) return null;
+            
+            const output = new Uint8Array(buffer.length * 4 / 5);
+            let periodFive = 0;
+            
+            for (let i = 0; i < output.length; i += 4) {
+                const longValue = HW_AES_AesEnhSysToLong(buffer.slice(periodFive, periodFive + 5));
+                output[i] = longValue & 0xFF;
+                output[i + 1] = (longValue >> 8) & 0xFF;
+                output[i + 2] = (longValue >> 16) & 0xFF;
+                output[i + 3] = (longValue >> 24) & 0xFF;
+                periodFive += 5;
+            }
+            
+            return output;
+        }
+
+                // Main decryption function
+        function HW_AESCBC_Decrypt(input, key) {
+            if (!input || typeof input !== 'string') return "";
+            
+            // Convert key to hex string if it's a buffer
+            if (key instanceof Uint8Array) {
+                key = toHexString(key);
+            }
+            
+            // Trim and validate input
+            const trimmedInput = HW_AES_Trim(input);
+            if (!trimmedInput) return "Invalid input format";
+            
+            // Convert to binary data
+            const unvisible = HW_AES_AscUnvisible(trimmedInput);
+            const blockCount = Math.floor(unvisible.length / BLOCK_SIZE);
+            
+            if (unvisible.length !== BLOCK_SIZE * blockCount) {
+                return "Invalid input length";
+            }
+            
+            // Extract IV and encrypted data
+            const ivStart = blockCount * BLOCK_SIZE - BLOCK_SIZE;
+            const ivEnd = blockCount * BLOCK_SIZE;
+            const iv = HW_AES_PlainToBin(unvisible.slice(ivStart, ivEnd));
+            const encryptedData = HW_AES_PlainToBin(unvisible.slice(0, blockCount * BLOCK_SIZE - BLOCK_SIZE));
+            
+            if (!iv || !encryptedData) {
+                return "Decryption failed: Invalid data format";
+            }
+            
+            try {
+                // Decrypt using CryptoJS
+                const keyHex = CryptoJS.enc.Hex.parse(key);
+                const ivHex = CryptoJS.enc.Hex.parse(toHexString(iv));
+                const encryptedHex = toHexString(encryptedData);
+                
+                // Decrypt the data
+                const decrypted = CryptoJS.AES.decrypt(
+                    { ciphertext: CryptoJS.enc.Hex.parse(encryptedHex) },
+                    keyHex,
+                    { 
+                        iv: ivHex,
+                        mode: CryptoJS.mode.CBC,
+                        padding: CryptoJS.pad.Pkcs7
+                    }
+                );
+                
+                // Convert to UTF-8 string
+                return decrypted.toString(CryptoJS.enc.Utf8);
+            } catch (error) {
+                console.error("Decryption error:", error);
+                return "Decryption failed: " + error.message;
+            }
+        }
+
+        function extractWiFiPasswords(xmlText) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            
+            const networks = [];
+            
+            const wlanConfigs = xmlDoc.getElementsByTagName('WLANConfigurationInstance');
+            
+            for (let config of wlanConfigs) {
+                const ssid = config.getAttribute('SSID');
+                const rfBand = config.getAttribute('X_HW_RFBand');
+                
+                if (ssid) {
+                    const preSharedKeys = config.getElementsByTagName('PreSharedKeyInstance');
+                    
+                    if (preSharedKeys.length > 0) {
+                        const encryptedPassword = preSharedKeys[0].getAttribute('PreSharedKey');
+                        
+                        if (encryptedPassword && encryptedPassword.startsWith('$2')) {
+                            try {
+                                let decrypted = HW_AESCBC_Decrypt(encryptedPassword, PASSWORD_HEX);
+                                // Remove non-printable characters and trim whitespace
+                                if (decrypted) {
+                                    // Remove null bytes and other control characters
+                                    decrypted = decrypted.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+                                    // Trim any remaining whitespace
+                                    decrypted = decrypted.trim();
+                                    
+                                    if (decrypted) {
+                                        networks.push({
+                                            ssid: ssid,
+                                            band: rfBand || 'Unknown',
+                                            encrypted: encryptedPassword,
+                                            decrypted: decrypted
+                                        });
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Erro ao descriptografar senha:', error);
+                                // Adiciona a rede mesmo com erro, marcando a senha como não descriptografada
+                                networks.push({
+                                    ssid: ssid,
+                                    band: rfBand || 'Unknown',
+                                    encrypted: encryptedPassword,
+                                    decrypted: 'Não foi possível descriptografar',
+                                    error: true
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return networks;
+        }
+
+        function displayResults(networks) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (networks.length === 0) {
+                resultsDiv.innerHTML = '<div class="error show">Nenhuma rede WiFi encontrada no arquivo.</div>';
+                resultsDiv.classList.add('show');
+                return;
+            }
+
+            let html = '<h2 style="margin-bottom: 20px; color: #333;">🔑 Senhas Extraídas</h2>';
+            
+            networks.forEach(network => {
+                const isError = network.error === true;
+                const cardClass = isError ? 'network-card error' : 'network-card';
+                const passwordValue = isError ? 
+                    '<span style="color: #d32f2f;">' + network.decrypted + '</span>' : 
+                    network.decrypted;
+                
+                html += `
+                    <div class="${cardClass}">
+                        <div class="network-name">
+                            ${isError ? '❌' : '📶'} ${network.ssid}
+                            <span class="network-band">${network.band}</span>
+                        </div>
+                        <div class="password-field">
+                            <span class="password-label">Senha:</span>
+                            <span class="password-value" id="pwd-${network.ssid.replace(/[^a-zA-Z0-9]/g, '_')}">
+                                ${passwordValue}
+                            </span>
+                            ${!isError ? `
+                            <button class="copy-btn" onclick="copyPassword('${network.ssid.replace(/[^a-zA-Z0-9]/g, '_')}', '${network.decrypted.replace(/'/g, "\\'")}', this)">
+                                📋 Copiar
+                            </button>` : ''}
+                        </div>
+                        ${isError ? `
+                        <div style="margin-top: 10px; font-size: 12px; color: #d32f2f;">
+                            Senha criptografada: ${network.encrypted}
+                        </div>` : ''}
+                    </div>
+                `;
+            });
+            
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function copyPassword(ssid, password, button) {
+            navigator.clipboard.writeText(password).then(() => {
+                button.textContent = '✓ Copiado!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = '📋 Copiar';
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.xml')) {
+                showError('Por favor, selecione um arquivo XML válido.');
+                return;
+            }
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('results').classList.remove('show');
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const networks = extractWiFiPasswords(e.target.result);
+                    document.getElementById('loading').classList.remove('show');
+                    displayResults(networks);
+                } catch (error) {
+                    document.getElementById('loading').classList.remove('show');
+                    showError('Erro ao processar arquivo: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                document.getElementById('loading').classList.remove('show');
+                showError('Erro ao ler o arquivo.');
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+        }
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+    </script>
+</body>
+</html>
