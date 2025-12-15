@@ -5,7 +5,7 @@ Ferramenta web para extrair e descriptografar senhas WiFi de arquivos de configu
 ## Como usar
 
 1. Acesse a ferramenta em [GitHub Pages](https://victorcarmo2003.github.io/HuaweiDecrypt/)
-2. Arraste e solte seu arquivo de configuração CML na área indicada
+2. Arraste e solte seu arquivo de configuração XML na área indicada
 3. As senhas serão exibidas automaticamente
 4. Clique em "Copiar" ao lado de cada senha para copiá-la
 
